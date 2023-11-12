@@ -75,13 +75,11 @@ class CircleSection():
         """
         Plot the original section
         """
-        xListPlot = []
-        yListPlot = []
         theta = np.arange(0, 2 * np.pi, 0.01)
         outxList = (self.outDiameter / 2.0) * np.cos(theta)
         outyList = (self.outDiameter / 2.0) * np.sin(theta)
-        xListPlot.append(outxList)
-        yListPlot.append(outyList)
+        xListPlot = [outxList]
+        yListPlot = [outyList]
         if self.innerDiameter != None:
             inxList = (self.innerDiameter / 2.0) * np.cos(theta)
             inyList = (self.innerDiameter / 2.0) * np.sin(theta)
@@ -119,24 +117,19 @@ class CircleSection():
         Output: coreFiberInfo:core concrete fiber elment informaiton [(xc1,yc1,area1),(xc2,yc2,area2)]
         """
         outDiameterNew = self.outDiameter - self.coverThick * 2.0
-        if self.innerDiameter != None:
+        if self.innerDiameter is None:
+            geom = pygmsh.opencascade.Geometry()
+            disk = geom.add_disk([0.0, 0.0, 0.0], outDiameterNew / 2.0, radius1=None, char_length=eleSize)
+        else:
             innerDiameterNew = self.innerDiameter + self.coverThick * 2.0
             geom = pygmsh.opencascade.Geometry()
             diskOut = geom.add_disk([0.0, 0.0, 0.0], outDiameterNew/2.0, radius1=None, char_length=eleSize)
             diskInner = geom.add_disk([0.0,0.0, 0.0], innerDiameterNew/2.0, radius1=None, char_length=eleSize)
             geom.boolean_difference([diskOut], [diskInner])
-            mesh = pygmsh.generate_mesh(geom)
-            points=mesh.points
-            triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
-            coreFiberInfo = self._triEleInfo(points, triangles)
-        else:
-            geom = pygmsh.opencascade.Geometry()
-            disk = geom.add_disk([0.0, 0.0, 0.0], outDiameterNew / 2.0, radius1=None, char_length=eleSize)
-            mesh = pygmsh.generate_mesh(geom)
-
-            points = mesh.points
-            triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
-            coreFiberInfo = self._triEleInfo(points, triangles)
+        mesh = pygmsh.generate_mesh(geom)
+        triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
+        points=mesh.points
+        coreFiberInfo = self._triEleInfo(points, triangles)
         return coreFiberInfo,points,triangles
     ####################################################
     def _coverDivide(self, coverSize, pos="out"):
@@ -190,15 +183,13 @@ class CircleSection():
         coverFiberInfo = None
         xListPLot = []
         yListPlot = []
-        xBorderPlot = []
-        yBorderPlot = []
         outCoverFiberInfo, outFiberXList, outFiberYList, outNodeList, \
-            outNewNodeList = self._coverDivide(coverSize,pos="out")
+                outNewNodeList = self._coverDivide(coverSize,pos="out")
         coverFiberInfo = outCoverFiberInfo
         borderOutNodeList = outNewNodeList
         borderOutNodeList.append(outNewNodeList[0])
-        xBorderPlot.append([each1[0] for each1 in borderOutNodeList])
-        yBorderPlot.append([each2[1] for each2 in borderOutNodeList])
+        xBorderPlot = [[each1[0] for each1 in borderOutNodeList]]
+        yBorderPlot = [[each2[1] for each2 in borderOutNodeList]]
         # self.ax.scatter(outFiberXList,outFiberYList,s=10,c="k",zorder = 2)
         for i5 in range(len(outNodeList)):
             xList = [outNodeList[i5][0], outNewNodeList[i5][0]]
@@ -208,7 +199,7 @@ class CircleSection():
         if self.innerDiameter != None:
             inDNew = self.innerDiameter + 2.0 * self.coverThick
             inCoverFiberInfo, inFiberXList, inFiberYList, inNodeList, inNewNodeList \
-                = self._coverDivide(coverSize, pos="in")
+                    = self._coverDivide(coverSize, pos="in")
             coverFiberInfo = coverFiberInfo + inCoverFiberInfo
             borderInNodeList = inNewNodeList
             borderInNodeList.append(inNewNodeList[0])
@@ -254,12 +245,10 @@ class CircleSection():
             barFiberInfo:bar fiber infomation [(xc1,yc1,area1),(xc2,yc2,area2)]
         """
         barFiberInfo = None
-        barXListPlot = []
-        barYListPlot = []
         outFiberInfo, outFiberXList, outFiberYList = self._barDivide(outBarD, outBarDist, pos="out")
         barFiberInfo = outFiberInfo
-        barXListPlot.append(outFiberXList)
-        barYListPlot.append(outFiberYList)
+        barXListPlot = [outFiberXList]
+        barYListPlot = [outFiberYList]
         if self.innerDiameter != None:
             inFiberInfo, inFiberXList, inFiberYList = self._barDivide(inBarD, inBarDist, pos="in")
             barFiberInfo = barFiberInfo + inFiberInfo
@@ -462,8 +451,7 @@ class PolygonSection():
         a2,b2,c2=b,-a,c22
         A = np.array([[a1, b1], [a2, b2]])
         B = np.array([-c1, -c2])
-        newNode = list(solve(A, B))
-        return newNode
+        return list(solve(A, B))
     ####################################################
     def _interNodeCoord(self,nodeDict,coverThick,pos):
         """
@@ -479,9 +467,10 @@ class PolygonSection():
         NodeKeys = list(nodeDict.keys())
         NodeKeys.append(NodeKeys[0])
         NodeKeys.append(NodeKeys[1])
-        IterNode = []
-        for i1 in range(len(nodeDict)):
-            IterNode.append((NodeKeys[i1], NodeKeys[i1 + 1], NodeKeys[i1 + 2]))
+        IterNode = [
+            (NodeKeys[i1], NodeKeys[i1 + 1], NodeKeys[i1 + 2])
+            for i1 in range(len(nodeDict))
+        ]
         NodeList = []
         for each1 in IterNode:
             nodeI = nodeDict[each1[0]]
@@ -532,9 +521,7 @@ class PolygonSection():
         output：
             NodeList:outside boundary line node list [(x1,y1),(x2,y2),...,(xn,yn)]
         """
-        ##calculate the interline node coordinates
-        newNodeList=self._interNodeCoord(nodeDict, coverThick, pos)
-        return newNodeList
+        return self._interNodeCoord(nodeDict, coverThick, pos)
     ####################################################
     def _triEleInfo(self, nodeNArray, eleNArray):
         """
@@ -574,13 +561,9 @@ class PolygonSection():
         triEleInfoList = None
         outNOdeList=[[outLineList[i1][0],outLineList[i1][1],0] for i1 in range(len(outLineList))]
 
-        if inLineList == None:
+        if inLineList is None:
             geom = pygmsh.opencascade.Geometry()
             geom.add_polygon(outNOdeList,lcar=eleSize)
-            mesh = pygmsh.generate_mesh(geom)
-            points = mesh.points
-            triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
-            triEleInfoList = self._triEleInfo(points, triangles)
         else:
             geom=pygmsh.opencascade.Geometry()
             outPolygon=geom.add_polygon(outNOdeList, lcar=eleSize)
@@ -589,10 +572,10 @@ class PolygonSection():
                 inPolygon=geom.add_polygon(inNodeList, lcar=eleSize)
                 differencePolygon=geom.boolean_difference([outPolygon],[inPolygon])
                 outPolygon=differencePolygon
-            mesh = pygmsh.generate_mesh(geom)
-            points = mesh.points
-            triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
-            triEleInfoList = self._triEleInfo(points, triangles)
+        mesh = pygmsh.generate_mesh(geom)
+        triangles = [each[1] for each in mesh.cells if each.type=='triangle'][0]
+        points = mesh.points
+        triEleInfoList = self._triEleInfo(points, triangles)
         return triEleInfoList,points,triangles
     ####################################################
     def _coverDivide(self, outNodeDict, inNodeDict, eleDict, eleSize, coverThick):
@@ -626,10 +609,8 @@ class PolygonSection():
             inNodeJy = inNodeDict[nodeJ][1]
             length = math.sqrt((outNodeJx - outNodeIx) ** 2 + (outNodeJy - outNodeIy) ** 2)
             nEle = int(length /float(eleSize))
-            totalOutNodeList = []
-            totalInNodeList = []
-            totalOutNodeList.append((outNodeIx, outNodeIy))
-            totalInNodeList.append((inNodeIx, inNodeIy))
+            totalOutNodeList = [(outNodeIx, outNodeIy)]
+            totalInNodeList = [(inNodeIx, inNodeIy)]
             for i2 in range(1, nEle):
                 outxi = ((nEle - i2) * outNodeIx + i2 * outNodeJx) / nEle  # n equal points equation
                 outyi = ((nEle - i2) * outNodeIy + i2 * outNodeJy) / nEle
@@ -640,9 +621,9 @@ class PolygonSection():
             totalOutNodeList.append((outNodeJx, outNodeJy))
             totalInNodeList.append((inNodeJx, inNodeJy))
             inLength = math.sqrt((totalInNodeList[1][0] - totalInNodeList[0][0]) ** 2 \
-                                 + (totalInNodeList[1][1] - totalInNodeList[0][1]) ** 2)
+                                     + (totalInNodeList[1][1] - totalInNodeList[0][1]) ** 2)
             outLength = math.sqrt((totalOutNodeList[1][0] - totalOutNodeList[0][0]) ** 2 + \
-                                  (totalOutNodeList[1][1] - totalOutNodeList[0][1]) ** 2)
+                                      (totalOutNodeList[1][1] - totalOutNodeList[0][1]) ** 2)
             eleArea = (inLength + outLength) * coverThick / 2.0
             for j2 in range(len(totalOutNodeList) - 1):
                 outPlotNode.append(totalOutNodeList[j2])
@@ -711,8 +692,7 @@ class PolygonSection():
         """
         # calculate the boundary line node list[(x1, y1), (x2, y2), ..., (xn, yn)]
         returnNodeList = self._middleLineNode(self.outNode, barToEdgeDist, pos="outLine")
-        outBarLineNodeDict = {(i1 + 1): returnNodeList[i1] for i1 in range(len(returnNodeList))}
-        return outBarLineNodeDict
+        return {(i1 + 1): returnNodeList[i1] for i1 in range(len(returnNodeList))}
     ####################################################
     def _innerBarLineNode(self,barToEdgeDist):
         """
@@ -757,16 +737,15 @@ class PolygonSection():
             nodeJy = nodeDict[nodeJ][1]
             length = math.sqrt((nodeJx - nodeIx) ** 2 + (nodeJy - nodeIy) ** 2)
             nEle = int(length / barDist)
-            lineBarCoorList = []
-            lineBarCoorList.append((nodeIx, nodeIy))
+            lineBarCoorList = [(nodeIx, nodeIy)]
             for i2 in range(1, nEle):
                 outxi = ((nEle - i2) * nodeIx + i2 * nodeJx) / nEle  # n equal nodes equation
                 outyi = ((nEle - i2) * nodeIy + i2 * nodeJy) / nEle
                 lineBarCoorList.append((outxi, outyi))
-            for i3 in range(len(lineBarCoorList)):
-                barFiberList.append((lineBarCoorList[i3][0], lineBarCoorList[i3][1], area))
-                xReturnList.append(lineBarCoorList[i3][0])
-                yReturnList.append(lineBarCoorList[i3][1])
+            for item in lineBarCoorList:
+                barFiberList.append((item[0], item[1], area))
+                xReturnList.append(item[0])
+                yReturnList.append(item[1])
         return barFiberList, xReturnList, yReturnList
     ###################################################
     def barMesh(self, outBarD, outBarDist,coverThick, inBarD=None, inBarDist=None):

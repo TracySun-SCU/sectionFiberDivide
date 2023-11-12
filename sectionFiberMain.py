@@ -77,11 +77,9 @@ def circleSection(sectionName,outD,coverThick,outbarD,outbarDist,coreSize,coverS
 
         for barx, bary in zip(barXListPlot, barYListPlot):
             ax.scatter(barx, bary, s=10, c="k", zorder=3)
-        plt.savefig(sectionName+".eps")
-        plt.savefig(sectionName+".jpg")
+        plt.savefig(f"{sectionName}.eps")
+        plt.savefig(f"{sectionName}.jpg")
         plt.show()
-    else:
-        pass
     return coreFiber,coverFiber,barFiber
 ######################################################################################
 ######################################################################################
@@ -196,7 +194,7 @@ def polygonSection(sectionName,outSideNode,outSideEle,coverThick,coreSize,coverS
     sectInstance = PolygonSection(outSideNode, outSideEle, inSideNode, inSideEle)
     originalNodeListPlot = sectInstance.sectPlot()  # [([x1,x2],[y1,y2]),([].[])]
     outLineList, coverlineListPlot = sectInstance.coverLinePlot(coverThick)
-    if inSideNode==None:
+    if inSideNode is None:
         sectInstance = PolygonSection(outSideNode, outSideEle)
         originalNodeListPlot = sectInstance.sectPlot()  # [([x1,x2],[y1,y2]),([].[])]
         outLineList, coverlineListPlot = sectInstance.coverLinePlot(coverThick)
@@ -222,7 +220,7 @@ def polygonSection(sectionName,outSideNode,outSideEle,coverThick,coreSize,coverS
             barFiber, barXListPlot, barYListPlot=sectInstance.userBarMesh(userBarNodeDict,userBarEleDict)
         else:
             print("Please input True or False!")
-    if inSideNode==None and plot==True:
+    if inSideNode is None and plot == True:
         w, h = figureSize(outSideNode)
         fig = plt.figure(figsize=(w, h))
         ax = fig.add_subplot(111)
@@ -241,8 +239,8 @@ def polygonSection(sectionName,outSideNode,outSideEle,coverThick,coreSize,coverS
                     [inNodeReturnPlot[i1][1], outNodeReturnPlot[i1][1]],
                     coverColor, linewidth=lineWid, zorder=0)
         ax.scatter(barXListPlot, barYListPlot, s=barMarkSize, c=barColor, linewidth=lineWid, zorder=2)
-        plt.savefig(sectionName+".eps")
-        plt.savefig(sectionName+".jpg")
+        plt.savefig(f"{sectionName}.eps")
+        plt.savefig(f"{sectionName}.jpg")
         plt.show()
     elif inSideNode!=None and plot==True:
         w, h = figureSize(outSideNode)
@@ -265,12 +263,10 @@ def polygonSection(sectionName,outSideNode,outSideEle,coverThick,coreSize,coverS
                     [inNodeReturnPlot[i1][1], outNodeReturnPlot[i1][1]],
                     coverColor, linewidth=lineWid, zorder=0)
         ax.scatter(barXListPlot, barYListPlot, s=barMarkSize, c=barColor, linewidth=lineWid, zorder=2)
-        plt.savefig(sectionName+".eps")
-        plt.savefig(sectionName+".jpg")
+        plt.savefig(f"{sectionName}.eps")
+        plt.savefig(f"{sectionName}.jpg")
         plt.show()
 
-    else:
-        pass
     return coreFiber,coverFiber,barFiber
 ######################################################################################
 # if __name__ == "__main__":
